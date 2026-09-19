@@ -44,7 +44,8 @@ async def read_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
     # OCR နဲ့ photo ထဲကစာဖတ်
     result = reader.readtext("receipt.jpg", detail=0)
 
-    # OCR result တွေကို စာကြောင်းတစ်ခုအဖြစ်ပေါင်း
+    print("RESULT:", result)
+
     text = " ".join(result)
 
     print("OCR:", text)
