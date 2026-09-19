@@ -1,5 +1,4 @@
 import os
-import easyocr
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -12,13 +11,11 @@ from telegram.ext import (
     ContextTypes,
     filters
 )
+from openai import OpenAI
 
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
-
-# OCR Reader
-reader = easyocr.Reader(["en"], gpu=False)
-
 
 # =========================
 # /start
@@ -35,31 +32,52 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # =========================
 async def read_photo(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    # Telegram ကပို့လာတဲ့ photo ကိုယူ
     photo = update.message.photo[-1]
 
-    # Telegram server က file ကိုယူ
     file = await context.bot.get_file(photo.file_id)
 
-    # Photo ကို temporary file အဖြစ် download လုပ်
     await file.download_to_drive("receipt.jpg")
 
-    # OCR နဲ့ photo ထဲကစာဖတ်
-    result = reader.readtext("receipt.jpg", detail=0)
+    with open("receipt.jpg", "rb") as image_file:
+        image_data = image_file.read()
 
-    print("RESULT:", result)
+    response = client.responses.create(
+        model="gpt-5.6-luna",
+        input=[
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": """
+                        Read this payment receipt image.
 
-    text = " ".join(result)
+                        Return ONLY these 5 fields:
 
-    print("OCR:", text)
+                        Amount:
+                        Name:
+                        Transaction ID:
+                        Date:
+                        Payment method:
 
-    # Channel ထဲသိမ်း
-    await save_photo(update, context, photo)
+                        If a field cannot be found, write:
+                        Not found
 
-    # User ကို OCR ဖတ်ထားတဲ့စာပြ
-    await update.message.reply_text(
-        f"📖 OCR Result:\n{text}"
+                        Do not add any other explanation.
+                        """
+                    },
+                    {
+                        "type": "input_image",
+                        "image_url": f"data:image/jpeg;base64,{__import__('base64').b64encode(image_data).decode()}"
+                    }
+                ]
+            }
+        ]
     )
+
+    result = response.output_text
+
+    await update.message.reply_text(result)
 
 
 # =========================
