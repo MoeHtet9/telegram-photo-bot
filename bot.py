@@ -1,5 +1,8 @@
 import os
 import easyocr
+import warnings
+
+warnings.filterwarnings("ignore")
 
 from telegram import Update
 from telegram.ext import (
