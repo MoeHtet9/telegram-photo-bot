@@ -12,7 +12,7 @@ TOKEN = os.getenv("BOT_TOKEN")
 CHANNEL_ID = os.getenv("CHANNEL_ID")
 
 # reader
-reader = easyocr.Reader(['en', 'my'])
+reader = easyocr.Reader(['en'], gpu=False)
 
 # reseived photo
 photo = update.message.photo[-1]
